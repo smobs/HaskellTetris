@@ -1,14 +1,12 @@
 {-# LANGUAGE TupleSections #-}
 import Control.Applicative ((<$>))
-import Control.Concurrent (MVar, forkIO, putMVar, threadDelay)
+import Control.Concurrent (MVar, forkIO, putMVar, threadDelay, newEmptyMVar, tryTakeMVar)
 import Control.Lens ((.~), ix)
-import Control.Monad (void)
+import Control.Monad (liftM, void)
 import Data.Monoid ((<>), mconcat)
 
 import Graphics.Gloss.Interface.IO.Game
 import System.Random (randomRIO)
-import Control.Concurrent (newEmptyMVar)
-import Control.Concurrent (tryTakeMVar)
 
 
 
@@ -33,8 +31,7 @@ main = do
 
 stepGame :: MVar Board -> Float -> (Board, Play) -> IO (Board, Play)
 stepGame aiMove _ (board, O) =
-    tryTakeMVar aiMove >>= 
-                return . maybe (board, O) ((, X))
+    liftM (maybe (board, O) (, X)) (tryTakeMVar aiMove)
 stepGame _ _ state = return state
 
 handleInput :: MVar Board -> Event -> (Board, Play) -> IO (Board, Play)
@@ -59,10 +56,10 @@ handleInput _ _ b  = return b
 drawBoard :: (Board, Play) -> IO Picture
 drawBoard (board, _) = return (grid <> plays) 
     where
-      grid = color black (line ([(-100, -300), (-100, 300)])) <>
-             color black (line ([(100, -300), (100, 300)])) <>
-             color black (line ([(-300, 100), (300, 100)])) <>
-             color black (line ([(-300, -100), (300, -100)]))
+      grid = color black (line [(-100, -300), (-100, 300)]) <>
+             color black (line [(100, -300), (100, 300)]) <>
+             color black (line [(-300, 100), (300, 100)]) <>
+             color black (line [(-300, -100), (300, -100)])
       plays = mconcat
               [ translate (fromIntegral $ (x - 1) * 200)
                         (fromIntegral $ (y - 1) * 200) $

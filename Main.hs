@@ -2,7 +2,6 @@
 import Data.Monoid ((<>), mconcat)
 
 import Graphics.Gloss.Interface.IO.Game
-import Data.Monoid (mappend)
 
 data Game = Game { grid :: Grid, window :: Window }
 
@@ -41,11 +40,7 @@ drawBoard :: Game -> IO Picture
 drawBoard board = return (gridLines <> filledSquares) 
     where
       drawLine = color red . line
-      gridLines = (mconcat . map  drawLine) 
-                  [[(-100, -300), (-100, 300)] ,
-                   [(100, -300), (100, 300)] ,
-                   [(-300, 100), (300, 100)] ,
-                   [(-300, -100), (300, -100)]]
+      gridLines = (mconcat . map  drawLine . getLinePoints) board                 
       filledSquares = mconcat
               [ translate (fromIntegral $ (x - 1) * 200)
                         (fromIntegral $ (y - 1) * 200) $
@@ -57,3 +52,14 @@ drawBoard board = return (gridLines <> filledSquares)
               , filled <- [(grid board !! x) !! y]
               ]
                         
+
+getLinePoints :: Game -> [Path]
+getLinePoints g = [[(-l, -h), (-l, h)] ,
+                   [(l, -h), (l, h)] ,
+                   [(-h, l), (h, l)] ,
+                   [(-h, -l), (h, -l)]]
+    where 
+      size = (fst . game_size . window) g
+      h = fromIntegral (size `div` 2)
+      l =  fromIntegral (size `div`  6)
+           

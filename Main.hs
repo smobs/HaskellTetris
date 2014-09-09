@@ -1,88 +1,59 @@
 {-# LANGUAGE TupleSections #-}
-import Control.Applicative ((<$>))
-import Control.Concurrent (MVar, forkIO, putMVar, threadDelay, newEmptyMVar, tryTakeMVar)
-import Control.Lens ((.~), ix)
-import Control.Monad (liftM, void)
 import Data.Monoid ((<>), mconcat)
 
 import Graphics.Gloss.Interface.IO.Game
-import System.Random (randomRIO)
+import Data.Monoid (mappend)
 
+data Game = Game { grid :: Grid, window :: Window }
 
+type Grid = [[Bool]]
+data Window = Window {game_size :: (Int, Int)}
 
-data Play = X | O deriving Eq
+initialGame :: Game
+initialGame = Game initialGrid initialWindow
 
-type Board = [[Maybe Play]]
+initialWindow :: Window
+initialWindow = Window (500, 500)
 
-initialBoard :: Board
-initialBoard = replicate 3 (replicate 3 Nothing)
+initialGrid :: Grid
+initialGrid = replicate 3 [False, False, True]
 
 main :: IO()
 main = do
-  aiMove <- newEmptyMVar
+  let game = initialGame
   playIO
-       (InWindow "Tic-tac-toe" (500, 500) (500, 500))
-       azure
+       (InWindow "Tetris" (game_size $ window game) (500, 500))
+       black
        10
-       (initialBoard, X)
+       game
        drawBoard
-       (handleInput aiMove)
-       (stepGame aiMove)
+       handleInput
+       stepGame
 
-stepGame :: MVar Board -> Float -> (Board, Play) -> IO (Board, Play)
-stepGame aiMove _ (board, O) =
-    liftM (maybe (board, O) (, X)) (tryTakeMVar aiMove)
-stepGame _ _ state = return state
+stepGame :: Float -> Game -> IO Game
+stepGame _ = return
 
-handleInput :: MVar Board -> Event -> (Board, Play) -> IO (Board, Play)
-handleInput
-  aiMove
-  (EventKey (MouseButton LeftButton) Up _ (x,y))
-  (board, X) =
-    let snap = (+1) . min 1 . max (-1) . fromIntegral .floor. (/ 100). (+50)
-        gridX = snap x
-        gridY = snap y
-    in case (board !! gridX) !! gridY of
-      Just _ -> return (board, X)
-      Nothing -> do
-                 let newBoard = (ix gridX . ix gridY .~ Just X) board
-                 forkAi aiMove newBoard
-                 return (newBoard, O)
-
-handleInput _ _ b  = return b
+handleInput ::  Event -> Game -> IO Game
+handleInput  _  = return
     
 
-
-drawBoard :: (Board, Play) -> IO Picture
-drawBoard (board, _) = return (grid <> plays) 
+drawBoard :: Game -> IO Picture
+drawBoard board = return (gridLines <> filledSquares) 
     where
-      grid = color black (line [(-100, -300), (-100, 300)]) <>
-             color black (line [(100, -300), (100, 300)]) <>
-             color black (line [(-300, 100), (300, 100)]) <>
-             color black (line [(-300, -100), (300, -100)])
-      plays = mconcat
+      drawLine = color red . line
+      gridLines = (mconcat . map  drawLine) 
+                  [[(-100, -300), (-100, 300)] ,
+                   [(100, -300), (100, 300)] ,
+                   [(-300, 100), (300, 100)] ,
+                   [(-300, -100), (300, -100)]]
+      filledSquares = mconcat
               [ translate (fromIntegral $ (x - 1) * 200)
                         (fromIntegral $ (y - 1) * 200) $
-                case play of
-                  X -> color white (thickCircle 1 50)
-                  O -> color black (thickCircle 1 50)
+                if filled then
+                  color white (thickCircle 1 50)
+                  else  color black (thickCircle 1 50)
               | x <- [0..2]
               , y <- [0..2]
-              , Just play <- [(board !! x) !! y]
+              , filled <- [(grid board !! x) !! y]
               ]
-
-forkAi :: MVar Board -> Board -> IO ()
-forkAi aiMove board = void $ forkIO $ do
-                        randomRIO (100000, 1000000) >>= threadDelay
-                        
-                        let plays = [(ix x . ix y .~ Just O) board
-                                     | x <- [0..2]
-                                     , y <- [0..2]
-                                     , Nothing <- [(board !! x) !! y]
-                                     ]
-                        case plays of
-                          [] -> putMVar aiMove board
-                          _ -> do
-                            newBoard <- (plays !!) <$> randomRIO (0, length plays - 1)
-                            putMVar aiMove newBoard
                         

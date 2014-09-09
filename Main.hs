@@ -15,7 +15,7 @@ initialWindow :: Window
 initialWindow = Window (500, 500)
 
 initialGrid :: Grid
-initialGrid = replicate 3 [False, False, True]
+initialGrid = replicate 3 [True, False, True]
 
 main :: IO()
 main = do
@@ -37,29 +37,33 @@ handleInput  _  = return
     
 
 drawBoard :: Game -> IO Picture
-drawBoard board = return (gridLines <> filledSquares) 
+drawBoard board = return (filledSquares <> gridLines) 
     where
+      size = (fst . game_size . window) board
+      s = squareWidth size
       drawLine = color red . line
-      gridLines = (mconcat . map  drawLine . getLinePoints) board                 
+      gridLines = (mconcat . map  drawLine . getLinePoints) size                 
       filledSquares = mconcat
-              [ translate (fromIntegral $ (x - 1) * 200)
-                        (fromIntegral $ (y - 1) * 200) $
-                if filled then
-                  color white (thickCircle 1 50)
-                  else  color black (thickCircle 1 50)
+              [ translate (fromIntegral  (x - 1) * s)
+                        (fromIntegral  (y - 1) * s) $
+                
+                  color white (rectangleSolid s s)
+                 
               | x <- [0..2]
               , y <- [0..2]
-              , filled <- [(grid board !! x) !! y]
+              , True <- [(grid board !! x) !! y]
               ]
                         
 
-getLinePoints :: Game -> [Path]
-getLinePoints g = [[(-l, -h), (-l, h)] ,
+getLinePoints :: Int -> [Path]
+getLinePoints size = [[(-l, -h), (-l, h)] ,
                    [(l, -h), (l, h)] ,
                    [(-h, l), (h, l)] ,
                    [(-h, -l), (h, -l)]]
     where 
-      size = (fst . game_size . window) g
       h = fromIntegral (size `div` 2)
       l =  fromIntegral (size `div`  6)
            
+squareWidth :: Int -> Float
+squareWidth size = (fromIntegral . div size) 3
+      

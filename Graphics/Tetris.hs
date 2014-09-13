@@ -9,9 +9,9 @@ import Graphics.Gloss (Path, Picture, color, line, rectangleSolid, red, translat
 import Types.Tetris
 
 drawTetrisBoard :: Game -> Picture
-drawTetrisBoard board =  (drawSquares s grid <> uncurry gridLines (gridSize grid) s) 
+drawTetrisBoard board =  (drawSquares w grid <> uncurry gridLines (gridSize grid) w h) 
     where
-      s = (fst . getWindowSize) board
+      (w, h) = getWindowSize board
       grid = getGameGrid board
          
 
@@ -58,16 +58,17 @@ drawSquareAt x y w h  =  translate x y $
 drawSquares :: Int -> Grid -> Picture
 drawSquares s grid = filledSquares (fromIntegral s) grid
 
-gridLines :: Int -> Int -> Int -> Picture
-gridLines nw nh  = drawLines . getLinePoints nw nh
+gridLines :: Int -> Int -> Int -> Int -> Picture
+gridLines nw nh sw = drawLines . getLinePoints nw nh sw
 
 drawLines :: [Path] -> Picture
 drawLines =  mconcat . map  drawLine
     where drawLine = color red . line
 
-getLinePoints :: Int -> Int -> Int -> [Path]
-getLinePoints nw nh size = getGridPaths nw nh  s s
-                     where s = fromIntegral size
+getLinePoints :: Int -> Int -> Int -> Int -> [Path]
+getLinePoints nw nh sw sh = getGridPaths nw nh  sw' sh'
+                     where sw' = fromIntegral sw
+                           sh' = fromIntegral sh
 
 intervals :: Int -> Float -> [Float]
 intervals n s = map ((translateCoord s n) . fromIntegral) [0 .. n]

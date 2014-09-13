@@ -35,7 +35,7 @@ initialWindow :: Window
 initialWindow = MkWindow (800, 600)
 
 initialGrid :: Grid
-initialGrid = MkGrid $ replicate 100 $ replicate 100 False
+initialGrid = MkGrid $ replicate 100 $ replicate 100 True
 
 valueInGridAt :: Grid -> Int -> Int -> Bool
 valueInGridAt g x y = getGrid g !! y !! x

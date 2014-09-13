@@ -9,7 +9,7 @@ import Graphics.Gloss (Path, Picture, color, line, rectangleSolid, red, translat
 import Types.Tetris
 
 drawTetrisBoard :: Game -> Picture
-drawTetrisBoard board =  (drawSquares w grid <> uncurry gridLines (gridSize grid) w h) 
+drawTetrisBoard board =  (drawSquares w h grid <> uncurry gridLines (gridSize grid) w h) 
     where
       (w, h) = getWindowSize board
       grid = getGameGrid board
@@ -35,16 +35,18 @@ horizontalLine :: Float -> Float -> Path
 horizontalLine l  = map swap .  verticalLine l
       
 
-filledSquares :: Float -> Grid -> Picture
-filledSquares s grid = mconcat
-              [ drawSquareAt (translateCornerTo nx x) (translateCornerTo ny y) (sqWidth nx) (sqWidth ny)
+filledSquares :: Float -> Float -> Grid -> Picture
+filledSquares sw sh grid = mconcat
+              [ drawSquareAt (translateCornerToX nx x) (translateCornerToY ny y) (sqWidthX nx) (sqWidthY ny)
               | x <- [0 .. nx - 1]
               , y <- [0.. ny - 1]
               , True <- [valueInGridAt grid x y]
               ]
     where (nx , ny) = gridSize grid
-          sqWidth n = s / fromIntegral  n
-          translateCornerTo n i = translateCoord s n ((fromIntegral i) + 0.5)
+          sqWidthX n = sw / fromIntegral n
+          translateCornerToX n i = translateCoord sw n ((fromIntegral i) + 0.5)
+          sqWidthY n = sh / fromIntegral n
+          translateCornerToY n i = translateCoord sh n ((fromIntegral i) + 0.5)
          
 
 
@@ -55,8 +57,8 @@ drawSquareAt x y w h  =  translate x y $
     
 
 
-drawSquares :: Int -> Grid -> Picture
-drawSquares s grid = filledSquares (fromIntegral s) grid
+drawSquares :: Int -> Int -> Grid -> Picture
+drawSquares sw sh  = filledSquares (fromIntegral sw) (fromIntegral sh) 
 
 gridLines :: Int -> Int -> Int -> Int -> Picture
 gridLines nw nh sw = drawLines . getLinePoints nw nh sw

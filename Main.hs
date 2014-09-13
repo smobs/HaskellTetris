@@ -18,7 +18,7 @@ initialWindow :: Window
 initialWindow = Window (500, 500)
 
 initialGrid :: Grid
-initialGrid = replicate 4 [False, True, False, True]
+initialGrid = replicate 5 [False, True, False, True]
 
 main :: IO()
 main = do
@@ -50,7 +50,7 @@ filledSquares s grid = mconcat
               [ drawSquareAt (translateCornerTo nx x) (translateCornerTo ny y) (sqWidth nx) (sqWidth ny)
               | x <- [0 .. nx - 1]
               , y <- [0.. ny - 1]
-              , True <- [(grid !! x) !! y]
+              , True <- [(grid !! y) !! x]
               ]
     where (nx , ny) = gridSize grid
           sqWidth n = s / fromIntegral  n

@@ -6,7 +6,7 @@ import Data.Monoid ((<>))
 import Data.Monoid (mconcat)
 import Data.Tuple (swap)
 import Graphics.Gloss (Path, Picture, color, line, rectangleSolid, red, translate, white)
-import Types.Tetris
+import Data.Tetris
 
 drawTetrisBoard :: Game -> Picture
 drawTetrisBoard board =  (drawSquares w h grid <> uncurry gridLines (gridSize grid) w h) 

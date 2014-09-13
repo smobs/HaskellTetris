@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 
 import Graphics.Gloss.Interface.IO.Game
-import Types.Tetris
+import Data.Tetris
 import Graphics.Tetris
 
 main :: IO()
@@ -17,7 +17,7 @@ main = do
        stepGame
 
 stepGame :: Float -> Game -> IO Game
-stepGame _ = return
+stepGame _ = return 
 
 handleInput ::  Event -> Game -> IO Game
 handleInput  _  = return

@@ -9,7 +9,9 @@ getWindowSize,
 getGameGrid,
 valueInGridAt,
 Grid(),
-Game()
+Game(),
+moveShape,
+Direction(..)
 )
 where
 
@@ -26,7 +28,7 @@ data  Game = Game { _grid :: Grid,  _window :: Window, _currentShape :: Maybe Te
 makeLenses ''TetrisShape
 makeLenses ''Game
 
-data Direction = DLeft | DRight | DDown
+data Direction = DLeft | DRight | DDown | DUp
 
 
 getGameGrid :: Game -> Grid
@@ -39,33 +41,63 @@ getWindowSize :: Game -> (Int, Int)
 getWindowSize = gameSize . view window 
 
 initialGame :: Game
-initialGame = Game initialGrid initialWindow Nothing
+initialGame = Game initialGrid initialWindow (Just $ MkShape [(10,11), (10,12),(11,11), (11,12)])
 
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)
 
 initialGrid :: Grid
-initialGrid =  replicate 100 $ concat $ replicate 50 [True, False]
+initialGrid =  replicate 30 $ replicate 30 False
 
 valueInGridAt :: Grid -> Int -> Int -> Bool
 valueInGridAt g x y =  g !! y !! x
 
+--yuck
+setGridAt :: Grid -> Int -> Int -> Bool -> Grid
+setGridAt g x y v = update y row g
+                    where row = update x (const v)
+
+update :: Eq a => Int -> (a -> a) -> [a] -> [a] 
+update i f xs = map repl $ zip xs [0..]
+    where repl (a, i')  | i == i' = f a
+                        | otherwise = a
+
 moveShape :: Direction -> Game -> Game
-moveShape d g =  if isValidPosition (g ^. grid) oldShape newShape then g else g
+moveShape d g =  if isValidPosition (g ^. grid) oldShape newShape 
+                 then updateGame g oldShape newShape 
+                 else g
              where 
                oldShape = fromMaybe [] $ g ^? currentShape . _Just . blocks
                newShape = moveShapePoints d oldShape
 
+updateGame :: Game -> [(Int,Int)] -> [(Int, Int)] -> Game
+updateGame g old new = g 
+                       & grid .~ newGrid 
+                       & currentShape .~ (Just . MkShape) new
+
+    where
+      newGrid = addShapeToGrid new $ removeShapeFromGrid old $ g ^. grid
+
+removeShapeFromGrid :: [(Int,Int)] -> Grid -> Grid
+removeShapeFromGrid = updateGridWithShape False
+
+addShapeToGrid :: [(Int,Int)] -> Grid -> Grid
+addShapeToGrid = updateGridWithShape True
+
+updateGridWithShape :: Bool ->  [(Int,Int)] -> Grid -> Grid
+updateGridWithShape b s g = foldr f g s
+    where f (x, y) g' = setGridAt g' x y b
+ 
 isValidPosition :: Grid -> [(Int, Int)] -> [(Int, Int)]->  Bool
-isValidPosition grid old new = not (outOfBounds || clashingBlock)
+isValidPosition g old new = not (outOfBounds || clashingBlock)
     where newPoints = filter (`notElem` old) new
-          withinGrid g (x , y) = let (x', y') = gridSize g in
+          withinGrid (x , y) = let (x', y') = gridSize g in
                                  x < 0 || y < 0 || x >= x' || y >= y'
-          clashingBlock = blockFilled grid newPoints
-          outOfBounds = L.any (withinGrid grid) newPoints
+          clashingBlock = blockFilled g newPoints
+          outOfBounds = L.any withinGrid newPoints
 
 blockFilled :: Grid -> [(Int, Int)] -> Bool
-blockFilled grid =  L.or . map (uncurry (valueInGridAt grid))
+blockFilled g =  L.or . map (uncurry (valueInGridAt g))
 
 
 moveShapePoints :: Direction -> [(Int, Int)] -> [(Int, Int)]
@@ -76,4 +108,5 @@ directionToVector d (x, y)= case d of
                         DLeft -> (x-1, y)
                         DRight -> (x+1, y)
                         DDown -> (x, y-1)
+                        DUp -> (x, y +1)
 

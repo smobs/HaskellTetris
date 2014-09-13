@@ -20,6 +20,10 @@ stepGame :: Float -> Game -> IO Game
 stepGame _ = return 
 
 handleInput ::  Event -> Game -> IO Game
+handleInput (EventKey (SpecialKey KeyLeft) Down  _ _) = return . moveShape DLeft
+handleInput (EventKey (SpecialKey KeyRight) Down  _ _) = return . moveShape DRight
+handleInput (EventKey (SpecialKey KeyUp) Down  _ _) = return . moveShape DUp
+handleInput (EventKey (SpecialKey KeyDown) Down  _ _) = return . moveShape DDown
 handleInput  _  = return
     
 

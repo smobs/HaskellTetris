@@ -41,12 +41,14 @@ gridSize = (,) <$> length . head <*> length
 getWindowSize :: Game -> (Int, Int)
 getWindowSize = gameSize . view window 
 
-initialGame :: Game
-initialGame = Game g initialWindow s
-              where (s, g) = getNextShape (initialGrid)
+initialGame :: IO Game
+initialGame = do
+  (s, g) <- getNextShape (initialGrid) 
+  return $ Game g initialWindow s
+             
 
-getNextShape :: Grid -> (Maybe TetrisShape , Grid)
-getNextShape g = (Just $ MkShape s , ng)
+getNextShape :: Grid -> IO (Maybe TetrisShape , Grid)
+getNextShape g = return (Just $ MkShape s , ng)
                  where 
                    (w,h) = gridSize g
                    s' = head possibleShapes
@@ -55,7 +57,10 @@ getNextShape g = (Just $ MkShape s , ng)
                    ng = addShapeToGrid s g
 
 possibleShapes :: [[(Int, Int)]]
-possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)]]
+possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
+                 [(0,0) , (1,0) , (2,0), (3,0)],
+                 [(0,0), (1,0) , (2,0), (2,1)],
+                 [(0,0), (1,0) , (2,0), (1,1)]]
 
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)
@@ -124,20 +129,21 @@ directionToVector d (x, y)= case d of
                         DDown -> (x, y-1)
                         DUp -> (x, y +1)
 
-updateGravity :: Game -> Game
-updateGravity g = if oldShape == newShape then shapePlaced newGame else newGame
+updateGravity :: Game -> IO Game
+updateGravity g = if oldShape == newShape then shapePlaced newGame else return newGame
                   where oldShape = g ^. currentShape
                         newGame = moveShape DDown g
                         newShape = newGame ^. currentShape
 
-shapePlaced :: Game -> Game
+shapePlaced :: Game -> IO Game
 shapePlaced = addNewShape . detectLoss . removeFullRows
 
-addNewShape :: Game -> Game
-addNewShape g = g 
-                & currentShape .~ s
-                & grid .~ gr
-                where (s, gr)  = getNextShape $ g ^. grid
+addNewShape :: Game -> IO Game
+addNewShape g = do
+  (s, gr)  <- getNextShape $ g ^. grid
+  return $ g  & currentShape .~ s
+             & grid .~ gr
+                 
 
 detectLoss :: Game -> Game
 detectLoss g = if L.or $ last $ g ^. grid  then error "Game over" else g

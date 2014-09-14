@@ -6,7 +6,7 @@ import Graphics.Tetris
 
 main :: IO()
 main = do
-  let game = initialGame
+  game <- initialGame
   playIO
        (InWindow "Tetris" (getWindowSize game) (500, 500))
        black
@@ -17,7 +17,7 @@ main = do
        stepGame
 
 stepGame :: Float -> Game -> IO Game
-stepGame _ = return . updateGravity 
+stepGame _ =  updateGravity 
 
 handleInput ::  Event -> Game -> IO Game
 handleInput (EventKey (SpecialKey KeyLeft) Down  _ _) = return . moveShape DLeft

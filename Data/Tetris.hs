@@ -156,9 +156,10 @@ detectLoss g = if L.or $ last $ g ^. grid
 
 removeFullRows :: Game -> Game
 removeFullRows g = g & grid .~ newGrid
-                    & score +~ (length full)
+                    & score +~ (linesCleared * linesCleared)
     where gr = g ^. grid
           (w, h) = gridSize gr
           emptyRow = replicate w False
           (full, notFull) =  L.partition L.and  gr
+          linesCleared = length full
           newGrid = take h ( notFull++ repeat emptyRow)

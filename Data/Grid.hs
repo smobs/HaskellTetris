@@ -1,7 +1,7 @@
 module Data.Grid(
 Grid,
 setGridAt,
-initialGrid,
+emptyGrid,
 valueInGridAt,
 gridSize
 ) where
@@ -15,9 +15,6 @@ type Grid a = [[a]]
 gridSize :: Grid a -> (Int , Int)
 gridSize = (,) <$> length . head <*> length 
 
-initialGrid :: Grid Bool
-initialGrid =  replicate 10 $ replicate 10 False
-
 valueInGridAt :: Grid a -> Int -> Int -> a
 valueInGridAt g x y =  g !! y !! x
 
@@ -30,4 +27,7 @@ update ::Int -> (a -> a) -> [a] -> [a]
 update i f xs = zipWith repl xs [0..]
     where repl a i'  | i == i' = f a
                         | otherwise = a
+
+emptyGrid :: Int -> Int -> Grid Bool
+emptyGrid x y = replicate y $ replicate x False 
 

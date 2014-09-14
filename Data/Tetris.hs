@@ -2,7 +2,6 @@
 
 module Data.Tetris (
 gridSize,
-initialGrid,
 initialWindow,
 initialGame,
 getWindowSize,
@@ -48,7 +47,7 @@ getWindowSize = gameSize . view window
 
 initialGame :: IO Game
 initialGame = do
-  (s, g) <- getNextShape initialGrid 
+  (s, g) <- getNextShape $ emptyGrid 10 10 
   return $ Game g initialWindow s
              
 

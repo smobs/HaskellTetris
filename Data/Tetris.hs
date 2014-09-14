@@ -11,7 +11,8 @@ valueInGridAt,
 Grid(),
 Game(),
 moveShape,
-Direction(..)
+Direction(..),
+updateGravity
 )
 where
 
@@ -22,7 +23,7 @@ import Data.Maybe (fromMaybe)
 
 type Grid = [[Bool]]
 newtype Window = MkWindow {gameSize :: (Int, Int)}
-newtype TetrisShape = MkShape {_blocks :: [(Int,Int)]}
+newtype TetrisShape = MkShape {_blocks :: [(Int,Int)]} deriving Eq
 data  Game = Game { _grid :: Grid,  _window :: Window, _currentShape :: Maybe TetrisShape }
 
 makeLenses ''TetrisShape
@@ -41,13 +42,13 @@ getWindowSize :: Game -> (Int, Int)
 getWindowSize = gameSize . view window 
 
 initialGame :: Game
-initialGame = Game initialGrid initialWindow (Just $ MkShape [(10,11), (10,12),(11,11), (11,12)])
+initialGame = Game initialGrid initialWindow (Just $ MkShape [(1,2), (1,1),(2,1), (2,2)])
 
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)
 
 initialGrid :: Grid
-initialGrid =  replicate 30 $ replicate 30 False
+initialGrid =  replicate 10 $ replicate 10 False
 
 valueInGridAt :: Grid -> Int -> Int -> Bool
 valueInGridAt g x y =  g !! y !! x
@@ -110,3 +111,17 @@ directionToVector d (x, y)= case d of
                         DDown -> (x, y-1)
                         DUp -> (x, y +1)
 
+updateGravity :: Game -> Game
+updateGravity g = if oldShape == newShape then shapePlaced newGame else newGame
+                  where oldShape = g ^. currentShape
+                        newGame = moveShape DDown g
+                        newShape = newGame ^. currentShape
+
+shapePlaced :: Game -> Game
+shapePlaced = addNewShape . detectLoss . removeFullRows
+
+addNewShape = undefined
+
+detectLoss = undefined
+
+removeFullRows = undefined

@@ -10,14 +10,14 @@ main = do
   playIO
        (InWindow "Tetris" (getWindowSize game) (500, 500))
        black
-       10
+       1
        game
        drawBoard
        handleInput
        stepGame
 
 stepGame :: Float -> Game -> IO Game
-stepGame _ = return 
+stepGame _ = return . updateGravity 
 
 handleInput ::  Event -> Game -> IO Game
 handleInput (EventKey (SpecialKey KeyLeft) Down  _ _) = return . moveShape DLeft

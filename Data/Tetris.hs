@@ -22,9 +22,9 @@ import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view)
 import Data.List as L
 import Data.Maybe (fromMaybe)
 import System.Random (RandomGen, newStdGen, randomR)
+import Data.Grid
 
 
-type Grid = [[Bool]]
 newtype Window = MkWindow {gameSize :: (Int, Int)}
 newtype TetrisShape = MkShape {_blocks :: [(Int,Int)]} deriving Eq
 data  Game = Game { _grid :: Grid,  _window :: Window, _currentShape :: Maybe TetrisShape }
@@ -39,8 +39,6 @@ data Translation = DLeft | DRight | DDown | DUp
 getGameGrid :: Game -> Grid
 getGameGrid = _grid
 
-gridSize :: Grid -> (Int , Int)
-gridSize = (,) <$> length . head <*> length 
 
 getWindowSize :: Game -> (Int, Int)
 getWindowSize = gameSize . view window 
@@ -75,21 +73,8 @@ possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)
 
-initialGrid :: Grid
-initialGrid =  replicate 10 $ replicate 10 False
 
-valueInGridAt :: Grid -> Int -> Int -> Bool
-valueInGridAt g x y =  g !! y !! x
 
---yuck
-setGridAt :: Grid -> Int -> Int -> Bool -> Grid
-setGridAt g x y v = update y row g
-                    where row = update x (const v)
-
-update :: Eq a => Int -> (a -> a) -> [a] -> [a] 
-update i f xs = zipWith repl xs [0..]
-    where repl a i'  | i == i' = f a
-                        | otherwise = a
 
 moveShape :: Direction -> Game -> Game
 moveShape d g =  if isValidPosition (g ^. grid) oldShape newShape 

@@ -42,7 +42,14 @@ getWindowSize :: Game -> (Int, Int)
 getWindowSize = gameSize . view window 
 
 initialGame :: Game
-initialGame = Game initialGrid initialWindow (Just $ MkShape [(1,2), (1,1),(2,1), (2,2)])
+initialGame = Game g initialWindow s
+              where (s, g) = getNextShape (initialGrid)
+
+getNextShape :: Grid -> (Maybe TetrisShape , Grid)
+getNextShape g = (Just $ MkShape s , ng)
+                 where s = [(5,9), (5,8),(4,8), (4,9)]
+                       ng = addShapeToGrid s g
+
 
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)
@@ -120,8 +127,12 @@ updateGravity g = if oldShape == newShape then shapePlaced newGame else newGame
 shapePlaced :: Game -> Game
 shapePlaced = addNewShape . detectLoss . removeFullRows
 
-addNewShape = undefined
+addNewShape :: Game -> Game
+addNewShape g = g 
+                & currentShape .~ s
+                & grid .~ gr
+                where (s, gr)  = getNextShape $ g ^. grid
 
-detectLoss = undefined
+detectLoss = id
 
-removeFullRows = undefined
+removeFullRows = id

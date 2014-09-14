@@ -135,4 +135,10 @@ addNewShape g = g
 
 detectLoss = id
 
-removeFullRows = id
+removeFullRows :: Game -> Game
+removeFullRows g = g & grid .~ newGrid
+    where gr = g ^. grid
+          (w, h) = gridSize gr
+          notFull = not . L.and
+          emptyRow = replicate w False
+          newGrid = take h (filter notFull gr ++ repeat emptyRow)

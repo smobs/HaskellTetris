@@ -47,7 +47,7 @@ getWindowSize = gameSize . view window
 
 initialGame :: IO Game
 initialGame = do
-  (s, g) <- getNextShape $ emptyGrid 10 10 
+  (s, g) <- getNextShape $ emptyGrid 10 20 
   return $ Game g initialWindow s 0
              
 
@@ -73,7 +73,7 @@ possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
                  [(1,0) ,(0,0),  (2,0), (1,1)]]
 
 initialWindow :: Window
-initialWindow = MkWindow (800, 600)
+initialWindow = MkWindow (300, 600)
 
 
 

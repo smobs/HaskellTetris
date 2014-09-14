@@ -133,7 +133,8 @@ addNewShape g = g
                 & grid .~ gr
                 where (s, gr)  = getNextShape $ g ^. grid
 
-detectLoss = id
+detectLoss :: Game -> Game
+detectLoss g = if L.or $ last $ g ^. grid  then error "Game over" else g
 
 removeFullRows :: Game -> Game
 removeFullRows g = g & grid .~ newGrid

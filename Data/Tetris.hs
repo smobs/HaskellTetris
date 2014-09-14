@@ -47,9 +47,15 @@ initialGame = Game g initialWindow s
 
 getNextShape :: Grid -> (Maybe TetrisShape , Grid)
 getNextShape g = (Just $ MkShape s , ng)
-                 where s = [(5,9), (5,8),(4,8), (4,9)]
-                       ng = addShapeToGrid s g
+                 where 
+                   (w,h) = gridSize g
+                   s' = head possibleShapes
+                   f (x, y) = ((w `div` 2) - x, h - 1 - y)
+                   s = map f s'
+                   ng = addShapeToGrid s g
 
+possibleShapes :: [[(Int, Int)]]
+possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)]]
 
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)

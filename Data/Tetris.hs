@@ -17,9 +17,11 @@ updateGravity
 where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens ((&) , (%~), _Just, (.~), (^.), (^?), makeLenses, view)
+import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view)
 import Data.List as L
 import Data.Maybe (fromMaybe)
+import System.Random (RandomGen, newStdGen, randomR)
+
 
 type Grid = [[Bool]]
 newtype Window = MkWindow {gameSize :: (Int, Int)}
@@ -43,18 +45,24 @@ getWindowSize = gameSize . view window
 
 initialGame :: IO Game
 initialGame = do
-  (s, g) <- getNextShape (initialGrid) 
+  (s, g) <- getNextShape initialGrid 
   return $ Game g initialWindow s
              
 
 getNextShape :: Grid -> IO (Maybe TetrisShape , Grid)
-getNextShape g = return (Just $ MkShape s , ng)
+getNextShape g = do
+  gen <- newStdGen
+  let s' = choose possibleShapes gen
+  let s = map f s'
+  let ng = addShapeToGrid s g
+  return (Just $ MkShape s , ng)
                  where 
                    (w,h) = gridSize g
-                   s' = head possibleShapes
                    f (x, y) = ((w `div` 2) - x, h - 1 - y)
-                   s = map f s'
-                   ng = addShapeToGrid s g
+      
+
+choose :: RandomGen b => [a] -> b -> a
+choose xs g = let l = length xs in xs !! fst ( randomR (0, l -1) g)
 
 possibleShapes :: [[(Int, Int)]]
 possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
@@ -77,8 +85,8 @@ setGridAt g x y v = update y row g
                     where row = update x (const v)
 
 update :: Eq a => Int -> (a -> a) -> [a] -> [a] 
-update i f xs = map repl $ zip xs [0..]
-    where repl (a, i')  | i == i' = f a
+update i f xs = zipWith repl xs [0..]
+    where repl a i'  | i == i' = f a
                         | otherwise = a
 
 moveShape :: Direction -> Game -> Game

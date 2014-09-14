@@ -35,7 +35,7 @@ horizontalLine :: Float -> Float -> Path
 horizontalLine l  = map swap .  verticalLine l
       
 
-filledSquares :: Float -> Float -> Grid -> Picture
+filledSquares :: Float -> Float -> Grid Bool -> Picture
 filledSquares sw sh grid = mconcat
               [ drawSquareAt (translateCornerToX nx x) (translateCornerToY ny y) (sqWidthX nx) (sqWidthY ny)
               | x <- [0 .. nx - 1]
@@ -57,7 +57,7 @@ drawSquareAt x y w h  =  translate x y $
     
 
 
-drawSquares :: Int -> Int -> Grid -> Picture
+drawSquares :: Int -> Int -> Grid Bool -> Picture
 drawSquares sw sh  = filledSquares (fromIntegral sw) (fromIntegral sh) 
 
 gridLines :: Int -> Int -> Int -> Int -> Picture

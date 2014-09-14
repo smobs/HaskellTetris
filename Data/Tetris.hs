@@ -25,9 +25,12 @@ import System.Random (RandomGen, newStdGen, randomR)
 import Data.Grid
 
 
+type GameGrid = Grid Bool
+
 newtype Window = MkWindow {gameSize :: (Int, Int)}
 newtype TetrisShape = MkShape {_blocks :: [(Int,Int)]} deriving Eq
-data  Game = Game { _grid :: Grid,  _window :: Window, _currentShape :: Maybe TetrisShape }
+
+data  Game = Game { _grid :: GameGrid,  _window :: Window, _currentShape :: Maybe TetrisShape }
 
 makeLenses ''TetrisShape
 makeLenses ''Game
@@ -36,7 +39,7 @@ data Direction = Translation Translation | Rotation
 data Translation = DLeft | DRight | DDown | DUp 
 
 
-getGameGrid :: Game -> Grid
+getGameGrid :: Game -> GameGrid
 getGameGrid = _grid
 
 
@@ -49,7 +52,7 @@ initialGame = do
   return $ Game g initialWindow s
              
 
-getNextShape :: Grid -> IO (Maybe TetrisShape , Grid)
+getNextShape :: GameGrid -> IO (Maybe TetrisShape , GameGrid)
 getNextShape g = do
   gen <- newStdGen
   let s' = choose possibleShapes gen
@@ -92,17 +95,17 @@ updateGame g old new = g
     where
       newGrid = addShapeToGrid new $ removeShapeFromGrid old $ g ^. grid
 
-removeShapeFromGrid :: [(Int,Int)] -> Grid -> Grid
+removeShapeFromGrid :: [(Int,Int)] -> GameGrid -> GameGrid
 removeShapeFromGrid = updateGridWithShape False
 
-addShapeToGrid :: [(Int,Int)] -> Grid -> Grid
+addShapeToGrid :: [(Int,Int)] -> GameGrid -> GameGrid
 addShapeToGrid = updateGridWithShape True
 
-updateGridWithShape :: Bool ->  [(Int,Int)] -> Grid -> Grid
+updateGridWithShape :: Bool ->  [(Int,Int)] -> GameGrid -> GameGrid
 updateGridWithShape b s g = foldr f g s
     where f (x, y) g' = setGridAt g' x y b
  
-isValidPosition :: Grid -> [(Int, Int)] -> [(Int, Int)]->  Bool
+isValidPosition :: GameGrid -> [(Int, Int)] -> [(Int, Int)]->  Bool
 isValidPosition g old new = not (outOfBounds || clashingBlock)
     where newPoints = filter (`notElem` old) new
           withinGrid (x , y) = let (x', y') = gridSize g in
@@ -110,7 +113,7 @@ isValidPosition g old new = not (outOfBounds || clashingBlock)
           clashingBlock = blockFilled g newPoints
           outOfBounds = L.any withinGrid newPoints
 
-blockFilled :: Grid -> [(Int, Int)] -> Bool
+blockFilled :: GameGrid -> [(Int, Int)] -> Bool
 blockFilled g =  L.any  (uncurry (valueInGridAt g))
 
 

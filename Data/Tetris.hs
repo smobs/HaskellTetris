@@ -12,6 +12,7 @@ Grid(),
 Game(),
 moveShape,
 Direction(..),
+Translation(..),
 updateGravity
 )
 where
@@ -31,7 +32,8 @@ data  Game = Game { _grid :: Grid,  _window :: Window, _currentShape :: Maybe Te
 makeLenses ''TetrisShape
 makeLenses ''Game
 
-data Direction = DLeft | DRight | DDown | DUp
+data Direction = Translation Translation | Rotation
+data Translation = DLeft | DRight | DDown | DUp 
 
 
 getGameGrid :: Game -> Grid
@@ -66,9 +68,9 @@ choose xs g = let l = length xs in xs !! fst ( randomR (0, l -1) g)
 
 possibleShapes :: [[(Int, Int)]]
 possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
-                 [(0,0) , (1,0) , (2,0), (3,0)],
-                 [(0,0), (1,0) , (2,0), (2,1)],
-                 [(0,0), (1,0) , (2,0), (1,1)]]
+                 [(1,0) , (0,0) ,  (2,0), (3,0)],
+                 [(1,0) ,(0,0),  (2,0), (2,1)],
+                 [(1,0) ,(0,0),  (2,0), (1,1)]]
 
 initialWindow :: Window
 initialWindow = MkWindow (800, 600)
@@ -124,23 +126,30 @@ isValidPosition g old new = not (outOfBounds || clashingBlock)
           outOfBounds = L.any withinGrid newPoints
 
 blockFilled :: Grid -> [(Int, Int)] -> Bool
-blockFilled g =  L.or . map (uncurry (valueInGridAt g))
+blockFilled g =  L.any  (uncurry (valueInGridAt g))
 
 
 moveShapePoints :: Direction -> [(Int, Int)] -> [(Int, Int)]
-moveShapePoints d =  map $ directionToVector d 
-
-directionToVector :: (Num t1, Num t) => Direction -> (t, t1) -> (t, t1)
+moveShapePoints (Translation d) points =  map  (directionToVector d) points
+moveShapePoints Rotation points = let (axis, ps) = (,) <$> head <*> tail $ points in
+                                  axis : map (rotate axis) ps
+                                      
+directionToVector :: (Num t1, Num t) => Translation -> (t, t1) -> (t, t1)
 directionToVector d (x, y)= case d of 
                         DLeft -> (x-1, y)
                         DRight -> (x+1, y)
                         DDown -> (x, y-1)
                         DUp -> (x, y +1)
 
+rotate :: (Int, Int) -> (Int, Int) -> (Int, Int)
+rotate (ax, ay) (px,py) = (ax + dy , ay - dx)
+   where  (dx, dy) = (px - ax, py - ay)
+          
+
 updateGravity :: Game -> IO Game
 updateGravity g = if oldShape == newShape then shapePlaced newGame else return newGame
                   where oldShape = g ^. currentShape
-                        newGame = moveShape DDown g
+                        newGame = moveShape (Translation DDown) g
                         newShape = newGame ^. currentShape
 
 shapePlaced :: Game -> IO Game

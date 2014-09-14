@@ -17,11 +17,11 @@ updateGravity
 where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view)
+import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view, (+~))
+import Data.Grid
 import Data.List as L
 import Data.Maybe (fromMaybe)
 import System.Random (RandomGen, newStdGen, randomR)
-import Data.Grid
 
 
 type GameGrid = Grid Bool
@@ -29,7 +29,7 @@ type GameGrid = Grid Bool
 newtype Window = MkWindow {gameSize :: (Int, Int)}
 newtype TetrisShape = MkShape {_blocks :: [(Int,Int)]} deriving Eq
 
-data  Game = Game { _grid :: GameGrid,  _window :: Window, _currentShape :: Maybe TetrisShape }
+data  Game = Game { _grid :: GameGrid,  _window :: Window, _currentShape :: Maybe TetrisShape , _score :: Int}
 
 makeLenses ''TetrisShape
 makeLenses ''Game
@@ -48,7 +48,7 @@ getWindowSize = gameSize . view window
 initialGame :: IO Game
 initialGame = do
   (s, g) <- getNextShape $ emptyGrid 10 10 
-  return $ Game g initialWindow s
+  return $ Game g initialWindow s 0
              
 
 getNextShape :: GameGrid -> IO (Maybe TetrisShape , GameGrid)
@@ -150,12 +150,15 @@ addNewShape g = do
                  
 
 detectLoss :: Game -> Game
-detectLoss g = if L.or $ last $ g ^. grid  then error "Game over" else g
+detectLoss g = if L.or $ last $ g ^. grid  
+               then error $ "Game over.  You scored: " ++ show ( g ^. score) 
+               else g
 
 removeFullRows :: Game -> Game
 removeFullRows g = g & grid .~ newGrid
+                    & score +~ (length full)
     where gr = g ^. grid
           (w, h) = gridSize gr
-          notFull = not . L.and
           emptyRow = replicate w False
-          newGrid = take h (filter notFull gr ++ repeat emptyRow)
+          (full, notFull) =  L.partition L.and  gr
+          newGrid = take h ( notFull++ repeat emptyRow)

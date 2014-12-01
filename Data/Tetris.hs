@@ -19,10 +19,9 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Lens ((&) , _Just, (.~), (^.), (^?), view, (+~), (%~))
 import Data.Grid
 import Data.List as L
-import Data.Maybe (fromMaybe)
-import Data.Maybe (isJust)
-import System.Random (RandomGen, newStdGen, randomR)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Types
+import System.Random (RandomGen, newStdGen, randomR)
 
 
 data Direction = Translation Translation | Rotation
@@ -86,11 +85,11 @@ updateGame :: Game  -> [(Int,Int)] -> [(Int, Int)] -> Game
 updateGame g old new = g 
                        & grid %~ (newGrid newShape) 
                        & currentShape .~ newShape
-
     where
       newShape = (g ^. currentShape) & _Just . blocks .~ new 
       newGrid (Just s) gr = addShapeToGrid s $ removeShapeFromGrid old gr
       newGrid Nothing gr = gr
+
 removeShapeFromGrid :: [(Int,Int)] -> GameGrid -> GameGrid
 removeShapeFromGrid = updateGridWithShape Nothing
 

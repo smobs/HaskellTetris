@@ -2,18 +2,13 @@ module Graphics.Tetris(
 drawTetrisBoard
 ) where
 
-import Data.Monoid ((<>), mconcat)
-import Data.Types
-import Data.Tuple (swap)
-import Data.Grid
-import Graphics.Gloss (color, line, red, translate,blue, green, yellow)
 
 import Control.Lens ((^.))
-import Graphics.Gloss (Picture)
-import Graphics.Gloss (Path)
-import Graphics.Gloss (Color)
-import Graphics.Gloss (rectangleSolid)
-import Graphics.Gloss (black)
+import Data.Grid
+import Data.Monoid ((<>), mconcat)
+import Data.Tuple (swap)
+import Data.Types
+import Graphics.Gloss (Color, Path, Picture, black, rectangleSolid, color, line, red, translate,blue, green, yellow)
 
 drawTetrisBoard :: Game -> Picture
 drawTetrisBoard board =  drawSquares w h g <> uncurry gridLines (gridSize g) w h

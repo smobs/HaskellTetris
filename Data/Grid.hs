@@ -6,8 +6,7 @@ valueInGridAt,
 gridSize
 ) where
 
-import Control.Applicative ((<*>))
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>))
 
 type Grid a = [[Maybe a]]
 

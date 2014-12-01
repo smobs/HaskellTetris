@@ -17,19 +17,23 @@ updateGravity
 where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view, (+~))
+import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view, (+~), (%~))
 import Data.Grid
 import Data.List as L
 import Data.Maybe (fromMaybe)
+import Data.Maybe (isJust)
 import System.Random (RandomGen, newStdGen, randomR)
+import Data.Types
 
+ 
+type TetrisBlock = TetrisColor
 
-type GameGrid = Grid Bool
+type GameGrid = Grid TetrisBlock
 
 newtype Window = MkWindow {gameSize :: (Int, Int)}
-newtype TetrisShape = MkShape {_blocks :: [(Int,Int)]} deriving Eq
+data TetrisShape = MkShape {_blocks :: [(Int,Int)], _color :: TetrisColor} deriving Eq
 
-data  Game = Game { _grid :: GameGrid,  _window :: Window, _currentShape :: Maybe TetrisShape , _score :: Int}
+data Game = Game { _grid :: GameGrid,  _window :: Window, _currentShape :: Maybe TetrisShape , _score :: Int}
 
 makeLenses ''TetrisShape
 makeLenses ''Game
@@ -47,7 +51,7 @@ getWindowSize = gameSize . view window
 
 initialGame :: IO Game
 initialGame = do
-  (s, g) <- getNextShape $ emptyGrid 10 20 
+  (s, g) <- getNextShape $ emptyGrid 10 20
   return $ Game g initialWindow s 0
              
 
@@ -55,9 +59,11 @@ getNextShape :: GameGrid -> IO (Maybe TetrisShape , GameGrid)
 getNextShape g = do
   gen <- newStdGen
   let s' = choose possibleShapes gen
+  let c = choose [Red .. Blue] gen
   let s = map f s'
-  let ng = addShapeToGrid s g
-  return (Just $ MkShape s , ng)
+  let shape = MkShape s c
+  let ng = addShapeToGrid shape g
+  return (Just $ shape , ng)
                  where 
                    (w,h) = gridSize g
                    f (x, y) = ((w `div` 2) - x, h - 1 - y)
@@ -73,6 +79,8 @@ possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
                  [(1,0) ,(0,0),  (2,0), (1,1)],
                  [(1,0) , (0,0), (1,1), (2,1)]]
 
+
+
 initialWindow :: Window
 initialWindow = MkWindow (300, 600)
 
@@ -87,21 +95,22 @@ moveShape d g =  if isValidPosition (g ^. grid) oldShape newShape
                oldShape = fromMaybe [] $ g ^? currentShape . _Just . blocks
                newShape = moveShapePoints d oldShape
 
-updateGame :: Game -> [(Int,Int)] -> [(Int, Int)] -> Game
+updateGame :: Game  -> [(Int,Int)] -> [(Int, Int)] -> Game
 updateGame g old new = g 
-                       & grid .~ newGrid 
-                       & currentShape .~ (Just . MkShape) new
+                       & grid %~ (newGrid newShape) 
+                       & currentShape .~ newShape
 
     where
-      newGrid = addShapeToGrid new $ removeShapeFromGrid old $ g ^. grid
-
+      newShape = (g ^. currentShape) & _Just . blocks .~ new 
+      newGrid (Just s) gr = addShapeToGrid s $ removeShapeFromGrid old gr
+      newGrid Nothing gr = gr
 removeShapeFromGrid :: [(Int,Int)] -> GameGrid -> GameGrid
-removeShapeFromGrid = updateGridWithShape False
+removeShapeFromGrid = updateGridWithShape Nothing
 
-addShapeToGrid :: [(Int,Int)] -> GameGrid -> GameGrid
-addShapeToGrid = updateGridWithShape True
+addShapeToGrid :: TetrisShape -> GameGrid -> GameGrid
+addShapeToGrid s = updateGridWithShape (Just $ s ^. color) (s ^. blocks)
 
-updateGridWithShape :: Bool ->  [(Int,Int)] -> GameGrid -> GameGrid
+updateGridWithShape :: Maybe(TetrisBlock) ->  [(Int,Int)] -> GameGrid -> GameGrid
 updateGridWithShape b s g = foldr f g s
     where f (x, y) g' = setGridAt g' x y b
  
@@ -114,7 +123,7 @@ isValidPosition g old new = not (outOfBounds || clashingBlock)
           outOfBounds = L.any withinGrid newPoints
 
 blockFilled :: GameGrid -> [(Int, Int)] -> Bool
-blockFilled g =  L.any  (uncurry (valueInGridAt g))
+blockFilled g =  L.any (\(x,y) -> isJust $ (valueInGridAt g x y))
 
 
 moveShapePoints :: Direction -> [(Int, Int)] -> [(Int, Int)]
@@ -151,7 +160,7 @@ addNewShape g = do
                  
 
 detectLoss :: Game -> Game
-detectLoss g = if L.or $ last $ g ^. grid  
+detectLoss g = if L.or $ map isJust $ last $ g ^. grid  
                then error $ "Game over.  You scored: " ++ show ( g ^. score) 
                else g
 
@@ -160,7 +169,7 @@ removeFullRows g = g & grid .~ newGrid
                     & score +~ (linesCleared * linesCleared)
     where gr = g ^. grid
           (w, h) = gridSize gr
-          emptyRow = replicate w False
-          (full, notFull) =  L.partition L.and  gr
+          emptyRow = replicate w Nothing
+          (full, notFull) =  L.partition (L.and . (map isJust)) gr
           linesCleared = length full
-          newGrid = take h ( notFull++ repeat emptyRow)
+          newGrid = take h (notFull ++ repeat emptyRow)

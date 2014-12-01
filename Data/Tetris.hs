@@ -1,6 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
-
-module Data.Tetris (
+module Data.Tetris 
+(
 gridSize,
 initialWindow,
 initialGame,
@@ -17,7 +16,7 @@ updateGravity
 where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens ((&) , _Just, (.~), (^.), (^?), makeLenses, view, (+~), (%~))
+import Control.Lens ((&) , _Just, (.~), (^.), (^?), view, (+~), (%~))
 import Data.Grid
 import Data.List as L
 import Data.Maybe (fromMaybe)
@@ -25,18 +24,6 @@ import Data.Maybe (isJust)
 import System.Random (RandomGen, newStdGen, randomR)
 import Data.Types
 
- 
-type TetrisBlock = TetrisColor
-
-type GameGrid = Grid TetrisBlock
-
-newtype Window = MkWindow {gameSize :: (Int, Int)}
-data TetrisShape = MkShape {_blocks :: [(Int,Int)], _color :: TetrisColor} deriving Eq
-
-data Game = Game { _grid :: GameGrid,  _window :: Window, _currentShape :: Maybe TetrisShape , _score :: Int}
-
-makeLenses ''TetrisShape
-makeLenses ''Game
 
 data Direction = Translation Translation | Rotation
 data Translation = DLeft | DRight | DDown | DUp 
@@ -108,7 +95,7 @@ removeShapeFromGrid :: [(Int,Int)] -> GameGrid -> GameGrid
 removeShapeFromGrid = updateGridWithShape Nothing
 
 addShapeToGrid :: TetrisShape -> GameGrid -> GameGrid
-addShapeToGrid s = updateGridWithShape (Just $ s ^. color) (s ^. blocks)
+addShapeToGrid s = updateGridWithShape (Just $ s ^. tetrisColor) (s ^. blocks)
 
 updateGridWithShape :: Maybe(TetrisBlock) ->  [(Int,Int)] -> GameGrid -> GameGrid
 updateGridWithShape b s g = foldr f g s

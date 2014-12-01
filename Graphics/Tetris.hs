@@ -3,20 +3,23 @@ drawTetrisBoard
 ) where
 
 import Data.Monoid ((<>), mconcat)
-import Data.Tetris
 import Data.Types
 import Data.Tuple (swap)
-import Graphics.Gloss (Color, Path, Picture, color, line, rectangleSolid, red, translate)
-import Graphics.Gloss (blue)
-import Graphics.Gloss (yellow)
-import Graphics.Gloss (green)
+import Data.Grid
+import Graphics.Gloss (color, line, red, translate,blue, green, yellow)
+
+import Control.Lens ((^.))
+import Graphics.Gloss (Picture)
+import Graphics.Gloss (Path)
+import Graphics.Gloss (Color)
+import Graphics.Gloss (rectangleSolid)
 import Graphics.Gloss (black)
 
 drawTetrisBoard :: Game -> Picture
-drawTetrisBoard board =  (drawSquares w h grid <> uncurry gridLines (gridSize grid) w h) 
+drawTetrisBoard board =  drawSquares w h g <> uncurry gridLines (gridSize g) w h
     where
-      (w, h) = getWindowSize board
-      grid = getGameGrid board
+      (w, h) = gameSize $ board ^. window
+      g = board ^. grid
          
 translateCoord :: Float -> Int -> Float -> Float
 translateCoord s n i = s * (i / n')  - (s / 2)
@@ -40,7 +43,7 @@ horizontalLine l  = map swap .  verticalLine l
       
 
 filledSquares :: Float -> Float -> Grid TetrisColor -> Picture
-filledSquares sw sh grid = mconcat
+filledSquares sw sh g = mconcat
               [ drawSquareAt 
                 (glossColor c) 
                 (translateCornerToX nx x) 
@@ -49,9 +52,9 @@ filledSquares sw sh grid = mconcat
                 (sqWidthY ny)
               | x <- [0 .. nx - 1]
               , y <- [0.. ny - 1]
-              , Just c <- [valueInGridAt grid x y]
+              , Just c <- [valueInGridAt g x y]
               ]
-    where (nx , ny) = gridSize grid
+    where (nx , ny) = gridSize g
           sqWidthX n = sw / fromIntegral n
           translateCornerToX n i = translateCoord sw n ((fromIntegral i) + 0.5)
           sqWidthY n = sh / fromIntegral n

@@ -1,30 +1,29 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 module Graphics.Grid 
-(draw)
+(drawGrid)
 where
 
 import Data.Grid
 import Data.Monoid ((<>), mconcat)
 import Data.Tuple (swap)
 import Graphics.Gloss ( color, translate, Path, Picture, black, line)
-import Graphics.Types
 
-instance Drawable a => Drawable (Grid a) where
-    draw = drawGrid
+type DrawableWithSize = Float -> Float -> Picture
 
-drawGrid :: Drawable a => Grid a -> Float -> Float -> Picture
-drawGrid g w h = drawSquares g w h <> uncurry gridLines (gridSize g) w h
+drawGrid :: (a ->  DrawableWithSize) -> Grid a -> DrawableWithSize
+drawGrid d g w h = drawSquares g' w h <> uncurry gridLines (gridSize g) w h
+                   where g' = gridMap d g 
 
 
-drawSquares ::Drawable a => Grid a -> Float -> Float -> Picture
+drawSquares :: Grid DrawableWithSize -> DrawableWithSize
 drawSquares g sw sh = mconcat
                         [ drawSquareAt 
-                          (draw c (sqWidthX nx)  (sqWidthY ny))
+                          (d (sqWidthX nx)  (sqWidthY ny))
                           (translateCornerToX nx x) 
                           (translateCornerToY ny y) 
                           | x <- [0 .. nx - 1]
                         , y <- [0.. ny - 1]
-                        , Just c <- [valueInGridAt g x y]
+                        , Just d <- [valueInGridAt g x y]
               ]
     where (nx , ny) = gridSize g
           sqWidthX n = sw / fromIntegral n
@@ -33,7 +32,7 @@ drawSquares g sw sh = mconcat
           translateCornerToY n i = translateCoord sh n (fromIntegral i + 0.5)
 
             
-drawSquareAt :: Picture -> Float -> Float  -> Picture
+drawSquareAt :: Picture -> DrawableWithSize
 drawSquareAt p x y  =  translate x y p
 
 
@@ -55,7 +54,7 @@ verticalLine l pos  = [(pos, -l'), (pos, l')]
 horizontalLine :: Float -> Float -> Path
 horizontalLine l  = map swap .  verticalLine l
 
-gridLines :: Int -> Int -> Float -> Float -> Picture
+gridLines :: Int -> Int -> DrawableWithSize
 gridLines nw nh sw = drawLines . getGridPaths nw nh sw
 
 drawLines :: [Path] -> Picture

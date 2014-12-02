@@ -3,7 +3,8 @@ Grid,
 setGridAt,
 emptyGrid,
 valueInGridAt,
-gridSize
+gridSize,
+gridMap
 ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -22,8 +23,6 @@ setGridAt :: Grid a -> Int -> Int -> Maybe a -> Grid a
 setGridAt g x y v = update y row g
                     where row = update x (const v)
 
-
-
 update ::Int -> (a -> a) -> [a] -> [a] 
 update i f xs = zipWith repl xs [0..]
     where repl a i'  | i == i' = f a
@@ -32,3 +31,5 @@ update i f xs = zipWith repl xs [0..]
 emptyGrid :: Int -> Int -> Grid a
 emptyGrid x y  = replicate y $ replicate x Nothing
 
+gridMap :: (a -> b) -> Grid a -> Grid b
+gridMap f = map $ map $ fmap f

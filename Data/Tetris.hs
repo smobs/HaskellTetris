@@ -1,17 +1,17 @@
 module Data.Tetris 
 (
-gridSize,
-initialWindow,
-initialGame,
-getWindowSize,
-getGameGrid,
-valueInGridAt,
 Grid(),
 Game(),
-moveShape,
 Direction(..),
 Translation(..),
-updateGravity
+getGameGrid,
+getWindowSize,
+gridSize,
+initialGame,
+initialWindow,
+move,
+updateGravity,
+valueInGridAt
 )
 where
 
@@ -31,7 +31,6 @@ data Translation = DLeft | DRight | DDown | DUp
 getGameGrid :: Game -> GameGrid
 getGameGrid = _grid
 
-
 getWindowSize :: Game -> (Int, Int)
 getWindowSize = gameSize . view window 
 
@@ -39,47 +38,31 @@ initialGame :: IO Game
 initialGame = do
   (s, g) <- getNextShape $ emptyGrid 10 20
   return $ Game g initialWindow s 0
-             
-
-getNextShape :: GameGrid -> IO (Maybe TetrisShape , GameGrid)
-getNextShape g = do
-  gen <- newStdGen
-  let s' = choose possibleShapes gen
-  let c = choose [Red .. Blue] gen
-  let s = map f s'
-  let shape = MkShape s c
-  let ng = addShapeToGrid shape g
-  return (Just $ shape , ng)
-                 where 
-                   (w,h) = gridSize g
-                   f (x, y) = ((w `div` 2) - x, h - 1 - y)
-      
-
-choose :: RandomGen b => [a] -> b -> a
-choose xs g = let l = length xs in xs !! fst ( randomR (0, l -1) g)
-
-possibleShapes :: [[(Int, Int)]]
-possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
-                 [(1,0) , (0,0) ,  (2,0), (3,0)],
-                 [(1,0) ,(0,0),  (2,0), (2,1)],
-                 [(1,0) ,(0,0),  (2,0), (1,1)],
-                 [(1,0) , (0,0), (1,1), (2,1)]]
-
-
 
 initialWindow :: Window
 initialWindow = MkWindow (300, 600)
 
-
-
-
-moveShape :: Direction -> Game -> Game
-moveShape d g =  if isValidPosition (g ^. grid) oldShape newShape 
+move :: Direction -> Game -> Game
+move d g =  if isValidPosition (g ^. grid) oldShape newShape 
                  then updateGame g oldShape newShape 
                  else g
              where 
                oldShape = fromMaybe [] $ g ^? currentShape . _Just . blocks
                newShape = moveShapePoints d oldShape
+
+updateGravity :: Game -> IO Game
+updateGravity g = if oldShape == newShape then shapePlaced newGame else return newGame
+                  where oldShape = g ^. currentShape
+                        newGame = move (Translation DDown) g
+                        newShape = newGame ^. currentShape
+
+moveShape' :: Direction ->  GameGrid -> TetrisShape -> TetrisShape
+moveShape' d g s
+    | isValidPosition g oldShape newShape = s & blocks .~ newShape
+    | otherwise = s
+      where 
+        oldShape = s ^. blocks
+        newShape = moveShapePoints d oldShape
 
 updateGame :: Game  -> [(Int,Int)] -> [(Int, Int)] -> Game
 updateGame g old new = g 
@@ -124,16 +107,12 @@ directionToVector d (x, y)= case d of
                         DDown -> (x, y-1)
                         DUp -> (x, y +1)
 
-rotate :: (Int, Int) -> (Int, Int) -> (Int, Int)
+rotate :: Num a => (a, a) -> (a, a) -> (a, a)
 rotate (ax, ay) (px,py) = (ax + dy , ay - dx)
    where  (dx, dy) = (px - ax, py - ay)
           
 
-updateGravity :: Game -> IO Game
-updateGravity g = if oldShape == newShape then shapePlaced newGame else return newGame
-                  where oldShape = g ^. currentShape
-                        newGame = moveShape (Translation DDown) g
-                        newShape = newGame ^. currentShape
+
 
 shapePlaced :: Game -> IO Game
 shapePlaced = addNewShape . detectLoss . removeFullRows
@@ -153,9 +132,43 @@ detectLoss g = if L.or $ map isJust $ last $ g ^. grid
 removeFullRows :: Game -> Game
 removeFullRows g = g & grid .~ newGrid
                     & score +~ (linesCleared * linesCleared)
-    where gr = g ^. grid
-          (w, h) = gridSize gr
-          emptyRow = replicate w Nothing
-          (full, notFull) =  L.partition (L.and . (map isJust)) gr
-          linesCleared = length full
-          newGrid = take h (notFull ++ repeat emptyRow)
+    where (linesCleared, newGrid) = removeFullRowsFrom (g ^. grid)
+
+removeFullRowsFrom :: Grid a -> (Int, Grid a)
+removeFullRowsFrom gr = (linesCleared , newGrid) 
+    where    
+      (w, h) = gridSize gr
+      emptyRow = replicate w Nothing
+      (full, notFull) =  L.partition (L.and . (map isJust)) gr
+      linesCleared = length full
+      newGrid = take h (notFull ++ repeat emptyRow)
+
+
+getNextShape :: GameGrid -> IO (Maybe TetrisShape , GameGrid)
+getNextShape g = do
+  shape <- makeNewShape g
+  let ng = addShapeToGrid shape g
+  return (Just $ shape , ng)
+                 where 
+      
+makeNewShape :: GameGrid -> IO TetrisShape
+makeNewShape g = do 
+  gen <- newStdGen
+  let s' = choose possibleShapes gen
+  let c = choose [Red .. Blue] gen
+  let s = map f s'
+  let shape = MkShape s c
+  return shape
+    where
+        (w,h) = gridSize g
+        f (x, y) = ((w `div` 2) - x, h - 1 - y)
+
+choose :: RandomGen b => [a] -> b -> a
+choose xs g = let l = length xs in xs !! fst ( randomR (0, l -1) g)
+
+possibleShapes :: [[(Int, Int)]]
+possibleShapes = [[(0,0) , (0,1) , (1, 1), (1,0)],
+                 [(1,0) , (0,0) ,  (2,0), (3,0)],
+                 [(1,0) ,(0,0),  (2,0), (2,1)],
+                 [(1,0) ,(0,0),  (2,0), (1,1)],
+                 [(1,0) , (0,0), (1,1), (2,1)]]

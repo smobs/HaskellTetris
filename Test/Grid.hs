@@ -19,11 +19,14 @@ gridRowSizeIsPositive  = \gr -> fst (gridSize gr) >= 0
 gridColSizeIsPositive ::  Grid TestT -> Bool
 gridColSizeIsPositive  = \gr -> snd (gridSize gr) >= 0
 
+
 emptyGridIsTheRightSize :: (Positive Int, Positive Int) -> Bool
 emptyGridIsTheRightSize (getPositive -> x, getPositive -> y) =
     gridSize(emptyGrid x y) == (x, y)
 
-emptyGridIsEmpty :: Grid TestT -> Int -> Int -> Maybe TestT -> Bool
-emptyGridIsEmpty g x y v = let g' = setGridAt g x y v in
-                           valueInGridAt g' x y == v
-
+emptyGridIsEmpty :: Grid TestT -> NonNegative Int -> NonNegative Int -> Maybe TestT -> Property
+emptyGridIsEmpty g (getNonNegative -> x) (getNonNegative -> y) v = 
+    let (w, h) = gridSize g in
+    x < w && y < h ==> 
+      let g' = setGridAt g x y v in
+      collect g' $ valueInGridAt g' x y == v

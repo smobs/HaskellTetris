@@ -27,7 +27,11 @@ setGridAt g x y v = update y row g
                     where row = update x (const v)
 
 valueInGridAt :: Grid a -> Int -> Int -> Maybe a
-valueInGridAt g x y =  g !! y !! x
+valueInGridAt g x y = if length g <= y 
+                      then Nothing    
+                      else 
+                          let g' = g !! y in
+                          if length g' <=  x then Nothing else g' !! x
 
 update ::Int -> (a -> a) -> [a] -> [a] 
 update i f xs = zipWith repl xs [0..]

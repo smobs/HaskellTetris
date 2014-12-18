@@ -14,6 +14,13 @@ instance Arbitrary a => Arbitrary (Grid a) where
       rs <- fixedLengthListOfList x y
       return $ rowsToGrid rs
 
+    shrink = map rowsToGrid . filter validGrid .  shrink . getRows
+               where validGrid xs =  case map length xs of 
+                                       [] -> True
+                                       l : ls -> all ((==) l) ls
+      
+      
+
 
 fixedLengthListOfList :: Arbitrary a => Int -> Int -> Gen [[a]]
 fixedLengthListOfList x y = do
@@ -30,7 +37,8 @@ test = do
   quickCheck gridRowSizeIsPositive
   quickCheck gridColSizeIsPositive
   quickCheck emptyGridIsTheRightSize
-  --quickCheck emptyGridIsEmpty
+  quickCheck emptyGridIsEmpty
+  quickCheck valueOutSideBoundsIsEmpty
 
 toRowsAndFromRowsAreId :: Grid TestT -> Property
 toRowsAndFromRowsAreId ts = let t' = (rowsToGrid $ getRows ts) in 
@@ -53,3 +61,8 @@ emptyGridIsEmpty g (getNonNegative -> x) (getNonNegative -> y) v =
     x < w && y < h ==> 
       let g' = setGridAt x y v g in
       counterexample (show g') $ valueInGridAt x y g' == v
+
+valueOutSideBoundsIsEmpty :: Grid TestT -> NonNegative Int -> NonNegative Int -> Property
+valueOutSideBoundsIsEmpty g (getNonNegative -> x) (getNonNegative -> y) = 
+    let (w, h) = gridSize g in
+    x >= w || y >= h ==>  valueInGridAt x y g == Nothing

@@ -12,7 +12,7 @@ type DrawableWithSize = Float -> Float -> Picture
 
 drawGrid :: (a ->  DrawableWithSize) -> Grid a -> DrawableWithSize
 drawGrid d g w h = drawSquares g' w h <> uncurry gridLines (gridSize g) w h
-                   where g' = gridMap d g 
+                   where g' = fmap d g 
 
 
 drawSquares :: Grid DrawableWithSize -> DrawableWithSize
@@ -23,7 +23,7 @@ drawSquares g sw sh = mconcat
                           (translateCornerToY ny y) 
                           | x <- [0 .. nx - 1]
                         , y <- [0.. ny - 1]
-                        , Just d <- [valueInGridAt g x y]
+                        , Just d <- [valueInGridAt x y g]
               ]
     where (nx , ny) = gridSize g
           sqWidthX n = sw / fromIntegral n

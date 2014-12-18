@@ -1,23 +1,24 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.Tetris 
 (
-Grid(),
+G.Grid(),
 Game(),
 Direction(..),
 Translation(..),
 getGameGrid,
 getWindowSize,
-gridSize,
+G.gridSize,
 initialGame,
 initialWindow,
 move,
 updateGravity,
-valueInGridAt
+G.valueInGridAt
 )
 where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens ((&) , _Just, (.~), (^.), (^?), view, (+~), (%~))
-import Data.Grid
+import Control.Lens ((&) , _Just, (.~), (^.), (^?), view, (+~), (%~), _2, _1)
+import qualified Data.Grid as G
 import Data.List as L
 import Data.Maybe (fromMaybe, isJust)
 import Data.Types
@@ -36,7 +37,7 @@ getWindowSize = gameSize . view window
 
 initialGame :: IO Game
 initialGame = do
-  (s, g) <- getNextShape $ emptyGrid 10 20
+  (s, g) <- getNextShape $ G.emptyGrid 10 20
   return $ Game g initialWindow s 0
 
 initialWindow :: Window
@@ -81,18 +82,18 @@ addShapeToGrid s = updateGridWithShape (Just $ s ^. tetrisColor) (s ^. blocks)
 
 updateGridWithShape :: Maybe(TetrisBlock) ->  [(Int,Int)] -> GameGrid -> GameGrid
 updateGridWithShape b s g = foldr f g s
-    where f (x, y) g' = setGridAt g' x y b
+    where f (x, y) = G.setGridAt x y b
  
 isValidPosition :: GameGrid -> [(Int, Int)] -> [(Int, Int)]->  Bool
 isValidPosition g old new = not (outOfBounds || clashingBlock)
     where newPoints = filter (`notElem` old) new
-          withinGrid (x , y) = let (x', y') = gridSize g in
+          withinGrid (x , y) = let (x', y') = G.gridSize g in
                                  x < 0 || y < 0 || x >= x' || y >= y'
           clashingBlock = blockFilled g newPoints
           outOfBounds = L.any withinGrid newPoints
 
 blockFilled :: GameGrid -> [(Int, Int)] -> Bool
-blockFilled g =  L.any (\(x,y) -> isJust $ (valueInGridAt g x y))
+blockFilled g =  L.any (\(x,y) -> isJust $ (G.valueInGridAt x y g))
 
 
 moveShapePoints :: Direction -> [(Int, Int)] -> [(Int, Int)]
@@ -125,23 +126,24 @@ addNewShape g = do
                  
 
 detectLoss :: Game -> Game
-detectLoss g = if L.or $ map isJust $ last $ g ^. grid  
+detectLoss g = if L.or $ map isJust $ G.lastRow $ g ^. grid  
                then error $ "Game over.  You scored: " ++ show ( g ^. score) 
                else g
+ 
 
 removeFullRows :: Game -> Game
 removeFullRows g = g & grid .~ newGrid
                     & score +~ (linesCleared * linesCleared)
     where (linesCleared, newGrid) = removeFullRowsFrom (g ^. grid)
 
-removeFullRowsFrom :: Grid a -> (Int, Grid a)
+removeFullRowsFrom :: G.Grid a -> (Int, G.Grid a)
 removeFullRowsFrom gr = (linesCleared , newGrid) 
     where    
-      (w, h) = gridSize gr
+      (w, h) = G.gridSize gr
       emptyRow = replicate w Nothing
-      (full, notFull) =  L.partition (L.and . (map isJust)) gr
+      (full, notFull) =  L.partition (L.and . (map isJust)) (G.getRows gr)
       linesCleared = length full
-      newGrid = take h (notFull ++ repeat emptyRow)
+      newGrid = G.rowsToGrid $ take h (notFull ++ repeat emptyRow)
 
 
 getNextShape :: GameGrid -> IO (Maybe TetrisShape , GameGrid)
@@ -160,7 +162,7 @@ makeNewShape g = do
   let shape = MkShape s c
   return shape
     where
-        (w,h) = gridSize g
+        (w,h) =  G.gridSize g
         f (x, y) = ((w `div` 2) - x, h - 1 - y)
 
 choose :: RandomGen b => [a] -> b -> a
